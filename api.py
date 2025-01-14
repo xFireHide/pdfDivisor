@@ -5,15 +5,16 @@ import json
 
 
 def handler(event, context):
-    body = json.loads(event["body"])
-    file_content = body.get("file_content")
-
-    if not file_content:
-        return {"statusCode": 400, "body": "Arquivo PDF não enviado."}
-
     try:
+        body = json.loads(event["body"])
+        file_content = body.get("file_content")
+
+        if not file_content:
+            return {"statusCode": 400, "body": "Arquivo PDF não enviado."}
+
         pdf_data = BytesIO(bytes(file_content, encoding="utf-8"))
         output_file = process_pdf(pdf_data)
+
         return {
             "statusCode": 200,
             "headers": {"Content-Type": "application/pdf"},
@@ -21,7 +22,7 @@ def handler(event, context):
             "isBase64Encoded": True,
         }
     except Exception as e:
-        return {"statusCode": 500, "body": str(e)}
+        return {"statusCode": 500, "body": f"Erro no servidor: {str(e)}"}
 
 
 def process_pdf(pdf_data):
