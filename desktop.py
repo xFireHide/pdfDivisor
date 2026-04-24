@@ -8,10 +8,11 @@ import queue
 import threading
 from io import BytesIO
 from pathlib import Path
+import fitz
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox, simpledialog, ttk
 
-from processor import process_pdf
+from processor import PDFPasswordError, process_pdf
 
 
 class App(tk.Tk):
@@ -31,15 +32,12 @@ class App(tk.Tk):
         outer = ttk.Frame(self, padding=20)
         outer.pack(fill=tk.BOTH, expand=True)
 
-        title = ttk.Label(outer, text="Etiquetas Shopee → impressora térmica", font=("", 14, "bold"))
+        title = ttk.Label(outer, text="processador de etiquetas", font=("", 14, "bold"))
         title.pack(anchor=tk.W, **pad)
 
         hint = ttk.Label(
             outer,
-            text=(
-                "Cada página do PDF da Shopee costuma ter 4 etiquetas em quadrantes.\n"
-                "Este programa separa em um PDF com uma etiqueta por página."
-            ),
+            text="Ola, Diana....",
             wraplength=460,
             justify=tk.LEFT,
         )
@@ -106,9 +104,61 @@ class App(tk.Tk):
         self._btn_run.configure(state=tk.NORMAL)
         self._status_var.set("Arquivo selecionado. Clique em “Processar e salvar como…”.")
 
+    def _request_password_if_needed(self, raw: bytes) -> str | None:
+        """
+        Abre o PDF na thread principal. Se estiver protegido, pede a senha ao usuário.
+        Retorna: "" se não precisa de senha, a senha se ok, None se o usuário cancelou.
+        """
+        try:
+            doc = fitz.open(stream=BytesIO(raw), filetype="pdf")
+        except RuntimeError as e:
+            msg = str(e)
+            messagebox.showerror(
+                "Erro ao abrir PDF",
+                f"Não foi possível abrir o arquivo:\n{msg}",
+                parent=self,
+            )
+            return None
+
+        try:
+            if not doc.needs_pass:
+                return ""
+            while True:
+                pwd = simpledialog.askstring(
+                    "PDF protegido por senha",
+                    "Este documento está criptografado ou fechado sem senha "
+                    '(mensagens como "document closed or encrypted").\n\n'
+                    "Digite a senha para abrir:",
+                    show="*",
+                    parent=self,
+                )
+                if pwd is None:
+                    return None
+                if doc.authenticate(pwd):
+                    return pwd
+                messagebox.showerror(
+                    "Senha incorreta",
+                    "A senha não abriu o PDF. Tente novamente.",
+                    parent=self,
+                )
+        finally:
+            doc.close()
+
     def _start_process(self) -> None:
         if self._busy or not self._input_path:
             return
+
+        try:
+            raw = self._input_path.read_bytes()
+        except OSError as e:
+            messagebox.showerror("Erro", f"Não foi possível ler o arquivo:\n{e}", parent=self)
+            return
+
+        password = self._request_password_if_needed(raw)
+        if password is None:
+            self._status_var.set("Operação cancelada ou falha ao abrir o PDF.")
+            return
+
         self._busy = True
         self._btn_open.configure(state=tk.DISABLED)
         self._btn_run.configure(state=tk.DISABLED)
@@ -117,9 +167,10 @@ class App(tk.Tk):
 
         def worker() -> None:
             try:
-                raw = self._input_path.read_bytes()
-                out = process_pdf(BytesIO(raw))
+                out = process_pdf(BytesIO(raw), password=password)
                 self._result_queue.put(("ok", out))
+            except PDFPasswordError as e:
+                self._result_queue.put(("err", str(e)))
             except Exception as e:
                 self._result_queue.put(("err", str(e)))
 

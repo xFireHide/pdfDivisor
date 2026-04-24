@@ -6,10 +6,19 @@ import fitz
 from PIL import Image, ImageStat
 
 
-def process_pdf(pdf_data):
+class PDFPasswordError(Exception):
+    """Senha incorreta ou PDF protegido sem autenticação válida."""
+
+
+def process_pdf(pdf_data, password: str = ""):
     pdf_data.seek(0)
     pdf_document = fitz.open(stream=pdf_data, filetype="pdf")
     try:
+        if pdf_document.needs_pass:
+            if not pdf_document.authenticate(password):
+                raise PDFPasswordError(
+                    "Não foi possível abrir o PDF com a senha informada."
+                )
         output = BytesIO()
         with fitz.open() as pdf_output:
             for page in pdf_document:

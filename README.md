@@ -28,7 +28,22 @@ Fluxo ao abrir o `.exe` (ou `python desktop.py`):
 
 ### Rodar sem gerar `.exe` (desenvolvimento)
 
+**macOS / Linux (recomendado — Python “externally managed” do Homebrew):**
+
 ```text
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python desktop.py
+```
+
+Ou, na raiz do projeto: `./run.sh` (cria o `.venv` e instala dependências na primeira vez).
+
+**Windows (Prompt na pasta do projeto):**
+
+```text
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
 python desktop.py
 ```
@@ -47,7 +62,7 @@ O executável sai em `dist\ProcessadorEtiquetasPDF.exe`. Se faltar algum módulo
 | Arquivo | Função |
 |--------|--------|
 | `processor.py` | Rasteriza o PDF (PyMuPDF), divide em 4 quadrantes, filtra branco, monta o PDF de saída. |
-| `desktop.py` | Interface com diálogos nativos (tkinter): abrir PDF → processar → salvar. |
+| `desktop.py` | Interface gráfica (tkinter/ttk): selecionar PDF, processar em segundo plano, salvar resultado. |
 
 1. Cada página é renderizada em alta resolução (300 DPI).
 2. Divisão em **4 retângulos** (quadrantes).
