@@ -25,7 +25,7 @@ A captura abaixo é o painel **Métricas principais** da loja na Shopee (períod
 
 Código principal: `api.py` (`process_pdf`, `divide_into_quadrants`, `is_image_blank`).
 
-## Uso local (interface)
+## Uso local (interface).
 
 1. Abra `index.html` no ambiente servido (ex.: deploy na Vercel ou servidor estático local).
 2. Envie o PDF exportado da Shopee (ou qualquer PDF com o mesmo layout de 4 etiquetas por página).
