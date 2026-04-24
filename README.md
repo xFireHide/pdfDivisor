@@ -1,45 +1,64 @@
 # Processador de PDF para etiquetas (Shopee → impressora térmica)
 
-Ferramenta web que divide cada página de um PDF em **quatro quadrantes**, gerando **uma etiqueta por página**. Foi criada para uso real em loja na **Shopee**, onde o arquivo de envio vem com **quatro etiquetas na mesma folha** — formato que não conversa bem com fluxos de impressão em **impressora térmica** (ex.: Zebra e similares), que esperam **uma etiqueta por impressão/página**.
+Programa **desktop** que divide cada página de um PDF em **quatro quadrantes**, gerando **uma etiqueta por página**. Foi criado para **uso pessoal** na operação de uma loja na **Shopee**, onde o arquivo de envio vem com **quatro etiquetas na mesma folha** — formato que não conversa bem com **impressora térmica** (ex.: Zebra e similares), que esperam **uma etiqueta por impressão/página**.
+
+**Sobre ZPL (`.zpl`):** impressoras Zebra costumam usar **ZPL**. Na prática, **minha funcionária tinha dificuldade com esse formato**; o fluxo ficou em **PDF** (visual, familiar), só **separando as etiquetas** antes de imprimir na térmica — sem depender de arquivos `.zpl` no dia a dia.
 
 ## Por que este projeto existe
 
-Na operação do dia a dia, imprimir direto o PDF da Shopee na térmica era impraticável: a página agrupa **4 etiquetas em quadrantes**. Cortar manualmente ou redimensionar página a página não escala quando o volume de pedidos cresce.
-
-Este programa **recorta automaticamente** cada quadrante, descarta quadrantes vazios (quando aplicável) e devolve um PDF em que **cada página é uma única etiqueta**, pronta para enviar à impressora térmica.
+Imprimir direto o PDF da Shopee na térmica era impraticável: **4 etiquetas em quadrantes** na mesma página. Este programa **recorta automaticamente** cada quadrante, ignora quadrantes vazios (heurística) e gera um PDF com **uma etiqueta por página**.
 
 ### Contexto da loja (volume que justifica a automação)
 
-A captura abaixo é o painel **Métricas principais** da loja na Shopee (período anual), com **faturamento** e **pedidos** — ordem de grandeza que torna inviável tratar cada PDF de etiquetas só “no braço”.
+![Métricas principais da loja na Shopee — vendas, pedidos e gráfico de tendências](docs/shopee-metricas-principais.png)
 
-![Métricas principais da loja na Shopee — vendas, pedidos e gráfico de tendências (pedidos, visitantes, vendas por pedido)](docs/shopee-metricas-principais.png)
+*Painel de métricas no momento da captura; os números podem mudar ao longo do tempo.*
 
-*No print: resumo com vendas e pedidos no ano e o gráfico de tendências ao longo dos meses (pedidos, visitantes, vendas por pedido). Os valores exatos podem mudar com o tempo; a imagem documenta o contexto operacional no momento da captura.*
+## Como usar (Windows — executável portátil)
+
+1. No PC com **Windows**, instale [Python 3.10+](https://www.python.org/downloads/) (marque “Add Python to PATH” na instalação).
+2. Abra a pasta do projeto e execute **`build-windows.bat`** (duplo clique ou pelo Prompt de Comando).
+3. Ao terminar, o arquivo **`dist\ProcessadorEtiquetasPDF.exe`** é o programa **portátil**: você pode copiar **só esse `.exe`** para outra máquina ou pendrive (modo *one-file* do PyInstaller).
+
+Fluxo ao abrir o `.exe` (ou `python desktop.py`):
+
+1. Abre uma **janela gráfica** (tkinter): leia o texto de ajuda, clique em **Selecionar PDF…**.
+2. Clique em **Processar e salvar como…** — a barra de progresso indica que está trabalhando (o PDF grande pode demorar).
+3. Escolha **onde salvar** o PDF processado (nome sugerido: `*_1-etiqueta-por-pagina.pdf`).
+
+### Rodar sem gerar `.exe` (desenvolvimento)
+
+```text
+pip install -r requirements.txt
+python desktop.py
+```
+
+### Gerar o `.exe` manualmente
+
+```text
+pip install -r requirements-build.txt
+python -m PyInstaller --onefile --windowed --name ProcessadorEtiquetasPDF --hidden-import=fitz desktop.py
+```
+
+O executável sai em `dist\ProcessadorEtiquetasPDF.exe`. Se faltar algum módulo no empacotamento, tente acrescentar `--collect-all pymupdf` ao comando.
 
 ## Como funciona (técnico)
 
-1. O PDF de entrada é rasterizado página a página (PyMuPDF / `fitz`).
-2. Cada página é dividida em **4 retângulos** (superior esquerdo, inferior esquerdo, superior direito, inferior direito).
-3. Quadrantes muito claros são tratados como **em branco** e ignorados (heurística por média de luminosidade).
-4. Cada quadrante válido vira uma **nova página** no PDF de saída.
+| Arquivo | Função |
+|--------|--------|
+| `processor.py` | Rasteriza o PDF (PyMuPDF), divide em 4 quadrantes, filtra branco, monta o PDF de saída. |
+| `desktop.py` | Interface com diálogos nativos (tkinter): abrir PDF → processar → salvar. |
 
-Código principal: `api.py` (`process_pdf`, `divide_into_quadrants`, `is_image_blank`).
-
-## Uso local (interface).
-
-1. Abra `index.html` no ambiente servido (ex.: deploy na Vercel ou servidor estático local).
-2. Envie o PDF exportado da Shopee (ou qualquer PDF com o mesmo layout de 4 etiquetas por página).
-3. Baixe o `processed.pdf` com **uma etiqueta por página**.
-
-## Deploy (Vercel)
-
-O repositório inclui `vercel.json` com build da função Python (`api.py`) e arquivos estáticos. Dependências: `requirements.txt` (`pymupdf`, `pillow`).
+1. Cada página é renderizada em alta resolução (300 DPI).
+2. Divisão em **4 retângulos** (quadrantes).
+3. Quadrantes muito claros são ignorados.
+4. Cada quadrante válido vira **uma página** no PDF final.
 
 ## Requisitos
 
-- Python 3 (na Vercel, conforme runtime do builder `@vercel/python`)
-- Pacotes listados em `requirements.txt`
+- **Runtime:** Python 3.10+, `pymupdf`, `pillow` — ver `requirements.txt`.
+- **Build do .exe no Windows:** `requirements-build.txt` (inclui PyInstaller).
 
 ## Licença e aviso
 
-Uso conforme a necessidade da sua operação. Valide sempre uma amostra do PDF gerado antes de imprimir em lote, pois mudanças no layout oficial das etiquetas da Shopee podem afetar o recorte.
+Projeto para **uso pessoal**. Teste sempre uma amostra antes de imprimir em lote; mudanças no layout das etiquetas da Shopee podem afetar o recorte.
