@@ -14,19 +14,15 @@ Imprimir direto o PDF da Shopee na térmica era impraticável: **4 etiquetas em 
 
 *Painel de métricas no momento da captura; os números podem mudar ao longo do tempo.*
 
-## Como usar (Windows — executável portátil)
+## Como usar
 
-1. No PC com **Windows**, instale [Python 3.10+](https://www.python.org/downloads/) (marque “Add Python to PATH” na instalação).
-2. Abra a pasta do projeto e execute **`build-windows.bat`** (duplo clique ou pelo Prompt de Comando).
-3. Ao terminar, o arquivo **`dist\ProcessadorEtiquetasPDF.exe`** é o programa **portátil**: você pode copiar **só esse `.exe`** para outra máquina ou pendrive (modo *one-file* do PyInstaller).
-
-Fluxo ao abrir o `.exe` (ou `python desktop.py`):
+Depois de instalar dependências e executar `python desktop.py` (ou `python3 desktop.py`), o fluxo é:
 
 1. Abre uma **janela gráfica** (tkinter): leia o texto de ajuda, clique em **Selecionar PDF…**.
 2. Clique em **Processar e salvar como…** — a barra de progresso indica que está trabalhando (o PDF grande pode demorar).
 3. Escolha **onde salvar** o PDF processado (nome sugerido: `*_1-etiqueta-por-pagina.pdf`).
 
-### Rodar sem gerar `.exe` (desenvolvimento)
+### Instalação e execução
 
 **macOS / Linux (recomendado — Python “externally managed” do Homebrew):**
 
@@ -48,15 +44,6 @@ pip install -r requirements.txt
 python desktop.py
 ```
 
-### Gerar o `.exe` manualmente
-
-```text
-pip install -r requirements-build.txt
-python -m PyInstaller --onefile --windowed --name ProcessadorEtiquetasPDF --hidden-import=fitz desktop.py
-```
-
-O executável sai em `dist\ProcessadorEtiquetasPDF.exe`. Se faltar algum módulo no empacotamento, tente acrescentar `--collect-all pymupdf` ao comando.
-
 ## Como funciona (técnico)
 
 | Arquivo | Função |
@@ -72,7 +59,6 @@ O executável sai em `dist\ProcessadorEtiquetasPDF.exe`. Se faltar algum módulo
 ## Requisitos
 
 - **Runtime:** Python 3.10+, `pymupdf`, `pillow` — ver `requirements.txt`.
-- **Build do .exe no Windows:** `requirements-build.txt` (inclui PyInstaller).
 
 ## Licença e aviso
 

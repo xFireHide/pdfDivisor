@@ -1,3 +1,0 @@
-# Build do .exe portátil no Windows (instalar para gerar dist/)
--r requirements-desktop.txt
-pyinstaller
